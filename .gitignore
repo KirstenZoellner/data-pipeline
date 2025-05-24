@@ -1,0 +1,28 @@
+# DATA FILES – rohes & verarbeitete CSV-Daten
+data/**/*.csv
+
+# ENVIRONMENT & CONFIG
+.env
+*.env
+
+# LOGFILES
+*.log
+logs/
+spark.log
+
+# NOTEBOOKS
+.ipynb_checkpoints/
+
+# PYTHON CACHE
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE & SYSTEM
+.vscode/
+.idea/
+.DS_Store
+
+# DOCKER
+*.pid
+*.sock

@@ -1,0 +1,68 @@
+version: '3.8'  # Docker Compose Version
+
+services:
+  mysql:
+    image: mysql:8.0  # Verwendetes MySQL Docker Image
+    container_name: mysql
+    restart: always  # Neustart bei Fehlern
+    environment:
+      MYSQL_ROOT_PASSWORD: root  # Root-Passwort (nur zu Demo-Zwecken so einfach!)
+      MYSQL_DATABASE: gdp_data   # Initial anzulegende Datenbank
+    volumes:
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql  # Initiales SQL-Skript
+    ports:
+      - "3306:3306"  # Externe Portfreigabe
+
+  ingestion:
+    build: ./ingestion  # Baut Dockerfile im ./ingestion Ordner
+    container_name: ingestion
+    volumes:
+      - ./data:/app/data  # Bindet CSV-Datenverzeichnis ins Containerverzeichnis ein
+    depends_on:
+      - mysql  # Startet erst, wenn MySQL verfügbar ist
+
+  spark:
+    build: ./spark  # Baut Dockerfile im ./spark Ordner
+    container_name: spark
+    volumes:
+      - ./spark:/app
+      - ./data:/app/data  # Zugriff auf rohen und verarbeiteten Datensatz
+      - ./logs:/app/logs  # Log-Ausgabe des Spark-Prozesses
+    depends_on:
+      - ingestion  # Wartet auf erfolgreiche Ingestion
+      - mysql      # Wartet auf MySQL-Dienst
+    command: python /app/process.py
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node  # Einzelinstanz-Modus für Entwicklung
+    ports:
+      - "9200:9200"  # Elasticsearch API-Zugriff
+    volumes:
+      - esdata:/usr/share/elasticsearch/data  # Persistente Elasticsearch-Daten
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.9
+    container_name: logstash
+    volumes:
+      - ./elk:/usr/share/logstash/pipeline # Logstash-Konfig einbinden
+      - ./logs:/app/logs  # <-- Damit Logstash Zugriff auf spark.log hat
+      - ./data/processed/correlation_by_country_year:/usr/share/logstash/data/correlation_by_country_year
+      - ./data/processed/correlation_by_country:/usr/share/logstash/data/correlation_by_country  # ⬅️ NEU
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5000:5000"  # Port für Log-Eingabe
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.9
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"  # Zugriff auf die Kibana-Weboberfläche
+
+volumes:
+  esdata:  # Externes Volume für Elasticsearch-Daten
