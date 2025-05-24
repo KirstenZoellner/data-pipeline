@@ -36,6 +36,11 @@ Schnellstart: (lokal)
 # Docker-Container starten
 docker-compose up --build
 
+# Einzelne Container neu starten oder debuggen
+docker-compose restart spark
+docker-compose logs ingestion
+
+
 Kibana im Browser unter http://localhost:5601
 
 Beispiel: Analyse

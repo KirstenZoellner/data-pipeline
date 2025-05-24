@@ -1,10 +1,9 @@
-
 import os
 import time
 import pandas as pd
 import mysql.connector
 
-# Verbindungseinstellungen für MySQL
+# DB-Verbindung
 DB_CONFIG = {
     'host': 'mysql',
     'user': 'root',
@@ -12,37 +11,47 @@ DB_CONFIG = {
     'database': 'gdp_data'
 }
 
-# Dateipfade zu den neuen Dateien
-GDP_CSV = '/app/data/raw/pib_per_capita_countries_dataset.csv'
-INFLATION_CSV = '/app/data/raw/global_inflation_countries.csv'
-MERGED_CSV_PATH = '/app/data/processed/merged_data.csv'
-CORRELATION_CSV = '/app/data/processed/correlation_by_country_year/reimport.csv'
+# Pfade
+RAW_DIR = '/app/data/raw'
+PROCESSED_DIR = '/app/data/processed'
+CORRELATION_CSV = os.path.join(PROCESSED_DIR, 'correlation_by_country_year', 'reimport.csv')
+MERGED_CSV_PATH = os.path.join(PROCESSED_DIR, 'merged_data.csv')
+
+def find_file(substring):
+    """Hilfsfunktion: Sucht Datei im RAW-Verzeichnis mit bestimmtem Namensmuster"""
+    for file in os.listdir(RAW_DIR):
+        if substring.lower() in file.lower() and file.endswith('.csv'):
+            return os.path.join(RAW_DIR, file)
+    return None
 
 def load_and_merge_data():
-    gdp_df = pd.read_csv(GDP_CSV)
-    inflation_df = pd.read_csv(INFLATION_CSV)
+    gdp_path = find_file('gdp') or find_file('pib')
+    inflation_path = find_file('inflation')
 
-    # Debug-Ausgabe vor dem Umbau
+    if not gdp_path or not inflation_path:
+        raise FileNotFoundError("❌ GDP- oder Inflationsdaten wurden nicht gefunden.")
+
+    gdp_df = pd.read_csv(gdp_path)
+    inflation_df = pd.read_csv(inflation_path)
+
     print("📌 Spalten in gdp_df:", gdp_df.columns.tolist())
     print("📌 Spalten in inflation_df:", inflation_df.columns.tolist())
 
-    # Umbenennen auf identische Join-Spalten
-    gdp_df = gdp_df[['country_name', 'year', 'gdp_per_capita']].rename(
-        columns={'country_name': 'country', 'year': 'year', 'gdp_per_capita': 'gdp_per_capita'}
-    )
+    # Vereinheitlichte Struktur
+    gdp_df = gdp_df[['country_name', 'year', 'gdp_per_capita']].rename(columns={
+        'country_name': 'country',
+        'year': 'year',
+        'gdp_per_capita': 'gdp_per_capita'
+    })
+    inflation_df = inflation_df[['country_name', 'year', 'inflation_rate']].rename(columns={
+        'country_name': 'country',
+        'year': 'year',
+        'inflation_rate': 'inflation'
+    })
 
-    inflation_df = inflation_df[['country_name', 'year', 'inflation_rate']].rename(
-        columns={'country_name': 'country', 'year': 'year', 'inflation_rate': 'inflation'}
-    )
-
-    print("📌 Nach Umbenennung gdp_df:", gdp_df.columns.tolist())
-    print("📌 Nach Umbenennung inflation_df:", inflation_df.columns.tolist())
-
-    # Jetzt klappt der Merge!
     merged_df = pd.merge(gdp_df, inflation_df, on=['country', 'year'])
 
-    # Speichern
-    os.makedirs('/app/data/processed', exist_ok=True)
+    os.makedirs(PROCESSED_DIR, exist_ok=True)
     merged_df.to_csv(MERGED_CSV_PATH, index=False)
     print(f"✅ Datei gespeichert: {MERGED_CSV_PATH}")
 
@@ -95,7 +104,6 @@ def import_correlations():
         VALUES (%s, %s, %s, %s)
         """
 
-        # Sichere Umwandlung
         correlation_value = row['correlation']
         if pd.isna(correlation_value) or str(correlation_value).lower() in ['nan', 'null', 'none']:
             correlation_value = None

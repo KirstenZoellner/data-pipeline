@@ -1,6 +1,12 @@
-import pandas as pd
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
 from scipy.stats import pearsonr
+import pandas as pd
 import os
+
+# Spark Session starten
+spark = SparkSession.builder.appName("CorrelationByCountryYear").getOrCreate()
 
 # Dateipfade
 inflation_path = "data/raw/global_inflation_countries.csv"
@@ -9,31 +15,34 @@ output_path = "data/processed/correlation_by_country_year/correlation_by_country
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 # CSVs laden
-inflation = pd.read_csv(inflation_path)
-gdp = pd.read_csv(gdp_path)
+inflation_df = spark.read.option("header", True).option("inferSchema", True).csv(inflation_path)
+gdp_df = spark.read.option("header", True).option("inferSchema", True).csv(gdp_path)
 
-# Nur relevante Spalten
-inflation = inflation[["country_code", "country_name", "year", "inflation_rate"]].copy()
-gdp = gdp[["country_code", "year", "gdp_per_capita"]].copy()
+# Nur relevante Spalten auswählen
+inflation_df = inflation_df.select("country_code", "country_name", "year", "inflation_rate")
+gdp_df = gdp_df.select("country_code", "year", "gdp_per_capita")
 
-# 0-Werte und fehlende Daten ausschließen
-inflation = inflation[inflation["inflation_rate"].notnull()]
-gdp = gdp[gdp["gdp_per_capita"].notnull()]
+# Nullwerte filtern
+inflation_df = inflation_df.filter(col("inflation_rate").isNotNull())
+gdp_df = gdp_df.filter(col("gdp_per_capita").isNotNull())
 
 # Zusammenführen
-merged = pd.merge(inflation, gdp, on=["country_code", "year"], how="inner")
+merged_df = inflation_df.join(gdp_df, on=["country_code", "year"], how="inner")
 
-# Berechnung pro Land und Jahr
+# In Pandas umwandeln für komplexe Korrelationen
+merged_pd = merged_df.toPandas()
+
+# Berechnung wie im Original
 results = []
 
-for country in merged["country_name"].unique():
-    df = merged[merged["country_name"] == country].dropna().sort_values("year")
+for country in merged_pd["country_name"].unique():
+    df = merged_pd[merged_pd["country_name"] == country].dropna().sort_values("year")
     years = df["year"].unique()
 
     for year in years:
         sub = df[df["year"] <= year].copy()
 
-        # einfache Pearson Korrelation (t vs. t)
+        # einfache Pearson Korrelation
         try:
             pearson_corr, _ = pearsonr(sub["inflation_rate"], sub["gdp_per_capita"])
         except:
@@ -54,5 +63,6 @@ for country in merged["country_name"].unique():
             "lagged_pearson_correlation": lag_corr
         })
 
-# Speichern
+# Ergebnisse speichern
 pd.DataFrame(results).to_csv(output_path, index=False)
+print(f"✅ Ergebnis gespeichert: {output_path}")
