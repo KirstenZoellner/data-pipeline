@@ -72,7 +72,7 @@ Die folgende Visualisierung zeigt die zeitversetzte Korrelation (lagged Pearson 
 - Ein positiver Wert bedeutet, dass steigende Inflation mit steigendem BIP-Wachstum im Folgejahr korreliert.
 - Ein negativer Wert deutet auf einen entgegengesetzten Zusammenhang hin.
 
-[Lagged Pearson-Korrelation Deutschland](images/lagged_correlation_germany.png)
+![Lagged Pearson-Korrelation Deutschland](images/lagged_correlation_germany.png)
 
 
 Autor:

@@ -28,8 +28,6 @@ services:
     restart: always
     volumes:
       - ./spark:/app
-      - ./data:/app/data
-      - ./logs:/app/logs
     depends_on:
       - ingestion
       - mysql
