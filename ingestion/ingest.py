@@ -14,7 +14,7 @@ DB_CONFIG = {
 # Pfade
 RAW_DIR = '/app/data/raw'
 PROCESSED_DIR = '/app/data/processed'
-CORRELATION_CSV = os.path.join(PROCESSED_DIR, 'correlation_by_country_year', 'reimport.csv')
+CORRELATION_CSV = os.path.join(PROCESSED_DIR, 'correlation_by_country_year')
 MERGED_CSV_PATH = os.path.join(PROCESSED_DIR, 'merged_data.csv')
 
 def find_file(substring):
@@ -100,21 +100,15 @@ def import_correlations():
 
     for _, row in df_corr.iterrows():
         sql = """
-        INSERT INTO correlation_by_country_year (country, year, num_records, correlation)
+        INSERT INTO correlation_by_country_year (country, year, pearson_correlation, lagged_pearson_correlation)
         VALUES (%s, %s, %s, %s)
         """
 
-        correlation_value = row['correlation']
-        if pd.isna(correlation_value) or str(correlation_value).lower() in ['nan', 'null', 'none']:
-            correlation_value = None
-        else:
-            correlation_value = float(correlation_value)
-
         values = (
-            row['country'],
+            row['country_name'],
             int(row['year']),
-            int(row['num_records']),
-            correlation_value
+            float(row['pearson_correlation']) if pd.notna(row['pearson_correlation']) else None,
+            float(row['lagged_pearson_correlation']) if pd.notna(row['lagged_pearson_correlation']) else None
         )
         cursor.execute(sql, values)
 
@@ -122,3 +116,9 @@ def import_correlations():
     cursor.close()
     connection.close()
     print("✅ Korrelationsergebnisse erfolgreich in MySQL importiert.")
+
+if __name__ == "__main__":
+    df = load_and_merge_data()
+    write_to_mysql(df)
+    import_correlations()
+

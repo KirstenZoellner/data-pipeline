@@ -11,7 +11,8 @@ spark = SparkSession.builder.appName("CorrelationByCountryYear").getOrCreate()
 # Dateipfade
 inflation_path = "data/raw/global_inflation_countries.csv"
 gdp_path = "data/raw/pib_per_capita_countries_dataset.csv"
-output_path = "data/processed/correlation_by_country_year/correlation_by_country_year.csv"
+os.makedirs("data/processed", exist_ok=True)
+output_path = "data/processed/correlation_by_country_year.csv"
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 # CSVs laden
