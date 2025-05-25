@@ -2,6 +2,22 @@ GDP-INFLATION-PIPELINE
 
 Ein datenintensives ETL-Projekt zur Analyse globaler BIP- und Inflationsdaten mit Daten aus Kaggle und mithilfe von Apache Spark, Docker und dem ELK-Stack.
 
+Ziel dieses Projekts ist der Aufbau einer batchbasierten Dateninfrastruktur, die in der Lage ist, große Mengen an Wirtschaftsdaten (z. B. BIP und Inflationsraten) aufzunehmen, effizient zu speichern, zu verarbeiten, zu aggregieren und für die Weiterverwendung in einer Machine-Learning-Pipeline bereitzustellen.
+
+Die zugrunde liegende Anwendung wird einmal pro Quartal ausgeführt und erzeugt jeweils ein aktualisiertes Machine-Learning-Modell auf Basis der neuen Daten. Diese ML-Anwendung ist nicht Teil dieses Projekts, wird jedoch durch die aufbereitete Datenbasis direkt unterstützt.
+
+Das System verarbeitet die Daten in Batches und besteht aus modularen Microservices für:
+
+    automatisierte Datenbeschaffung (Kaggle)
+
+    Datenverarbeitung und -aggregation (Apache Spark)
+
+    Speicherung in einer relationalen Datenbank (MySQL)
+
+    optionaler Überwachung via ELK-Stack
+
+Die Infrastruktur ist containerisiert via Docker und kann lokal oder automatisiert (z. B. über docker-compose run scheduler) ausgeführt werden.
+
 
 Technologien:
 

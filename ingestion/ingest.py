@@ -4,29 +4,15 @@ import pandas as pd
 import mysql.connector
 from kaggle.api.kaggle_api_extended import KaggleApi
 
-# API initialisieren
-os.environ['KAGGLE_CONFIG_DIR'] = '/app/.kaggle'  # Im Docker-Container
+# ----------------------
+# KONSTANTEN & PFADSETUP
+# ----------------------
 
-api = KaggleApi()
-api.authenticate()
+RAW_DIR = '/app/data/raw'
+PROCESSED_DIR = '/app/data/processed'
+CORRELATION_CSV = os.path.join(PROCESSED_DIR, 'correlation_by_country_year.csv')
+MERGED_CSV_PATH = os.path.join(PROCESSED_DIR, 'merged_data.csv')
 
-# Datensätze herunterladen
-print("📥 Lade Daten von Kaggle herunter...")
-api.dataset_download_files(
-    'fredericksalazar/global-gdp-pib-per-capita-dataset-1960-present',
-    path='/app/data/raw',
-    unzip=True
-)
-
-api.dataset_download_files(
-    'fredericksalazar/global-inflation-rate-1960-present',
-    path='/app/data/raw',
-    unzip=True
-)
-
-print("✅ Daten erfolgreich heruntergeladen.")
-
-# DB-Verbindung
 DB_CONFIG = {
     'host': 'mysql',
     'user': 'root',
@@ -34,38 +20,57 @@ DB_CONFIG = {
     'database': 'gdp_data'
 }
 
-# Pfade
-RAW_DIR = '/app/data/raw'
-PROCESSED_DIR = '/app/data/processed'
-CORRELATION_CSV = os.path.join(PROCESSED_DIR, 'correlation_by_country_year.csv')
-MERGED_CSV_PATH = os.path.join(PROCESSED_DIR, 'merged_data.csv')
+# ----------------------
+# KAGGLE-DOWNLOAD
+# ----------------------
+
+def download_from_kaggle():
+    print("🌐 Starte Kaggle-Download...")
+    os.makedirs(RAW_DIR, exist_ok=True)
+
+    api = KaggleApi()
+    api.authenticate()
+
+    datasets = {
+        "gdp": "fredericksalazar/global-gdp-pib-per-capita-dataset-1960-present",
+        "inflation": "fredericksalazar/global-inflation-rate-1960-present"
+    }
+
+    for name, dataset in datasets.items():
+        print(f"📥 Lade {name}...")
+        api.dataset_download_files(dataset, path=RAW_DIR, unzip=True)
+        print(f"✅ {name} fertig.")
+
+# ----------------------
+# HILFSFUNKTIONEN
+# ----------------------
 
 def find_file(substring):
-    """Hilfsfunktion: Sucht Datei im RAW-Verzeichnis mit bestimmtem Namensmuster"""
     for file in os.listdir(RAW_DIR):
         if substring.lower() in file.lower() and file.endswith('.csv'):
             return os.path.join(RAW_DIR, file)
     return None
+
+# ----------------------
+# VERARBEITUNG
+# ----------------------
 
 def load_and_merge_data():
     gdp_path = find_file('gdp') or find_file('pib')
     inflation_path = find_file('inflation')
 
     if not gdp_path or not inflation_path:
-        raise FileNotFoundError("❌ GDP- oder Inflationsdaten wurden nicht gefunden.")
+        raise FileNotFoundError("❌ GDP- oder Inflationsdaten fehlen im raw-Verzeichnis.")
 
     gdp_df = pd.read_csv(gdp_path)
     inflation_df = pd.read_csv(inflation_path)
 
-    print("📌 Spalten in gdp_df:", gdp_df.columns.tolist())
-    print("📌 Spalten in inflation_df:", inflation_df.columns.tolist())
-
-    # Vereinheitlichte Struktur
     gdp_df = gdp_df[['country_name', 'year', 'gdp_per_capita']].rename(columns={
         'country_name': 'country',
         'year': 'year',
         'gdp_per_capita': 'gdp_per_capita'
     })
+
     inflation_df = inflation_df[['country_name', 'year', 'inflation_rate']].rename(columns={
         'country_name': 'country',
         'year': 'year',
@@ -76,9 +81,13 @@ def load_and_merge_data():
 
     os.makedirs(PROCESSED_DIR, exist_ok=True)
     merged_df.to_csv(MERGED_CSV_PATH, index=False)
-    print(f"✅ Datei gespeichert: {MERGED_CSV_PATH}")
+    print(f"💾 Gespeichert: {MERGED_CSV_PATH}")
 
     return merged_df
+
+# ----------------------
+# DATENBANK
+# ----------------------
 
 def write_to_mysql(df):
     for i in range(10):
@@ -109,11 +118,11 @@ def write_to_mysql(df):
     connection.commit()
     cursor.close()
     connection.close()
-    print("✅ GDP- und Inflationsdaten erfolgreich in MySQL eingefügt")
+    print("✅ GDP/Inflation-Daten gespeichert.")
 
 def import_correlations():
     if not os.path.exists(CORRELATION_CSV):
-        print(f"❌ Korrelationsergebnis nicht gefunden: {CORRELATION_CSV}")
+        print(f"⚠️ Keine Korrelationsergebnisse gefunden: {CORRELATION_CSV}")
         return
 
     df_corr = pd.read_csv(CORRELATION_CSV)
@@ -138,10 +147,14 @@ def import_correlations():
     connection.commit()
     cursor.close()
     connection.close()
-    print("✅ Korrelationsergebnisse erfolgreich in MySQL importiert.")
+    print("✅ Korrelationen gespeichert.")
+
+# ----------------------
+# PIPELINE-AUFRUF
+# ----------------------
 
 if __name__ == "__main__":
+    download_from_kaggle()
     df = load_and_merge_data()
     write_to_mysql(df)
     import_correlations()
-

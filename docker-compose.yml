@@ -1,6 +1,23 @@
 version: '3.8'
 
 services:
+
+  scheduler:
+    build: ./ingestion
+    container_name: scheduler
+    depends_on:
+      - mysql
+      - spark
+    volumes:
+      - ./data:/app/data
+      - ./ingestion/.kaggle:/root/.config/kaggle:ro
+    command: >
+      sh -c "
+        python ingest.py &&
+        docker-compose run --rm spark &&
+        python ingest.py
+      "
+
   mysql:
     image: mysql:8.0
     container_name: mysql
@@ -19,7 +36,7 @@ services:
     restart: always
     volumes:
       - ./data:/app/data
-      - ./ingestion/.kaggle:/app/.kaggle:ro
+      - ./ingestion/.kaggle:/root/.config/kaggle:ro
     depends_on:
       - mysql
 
@@ -29,6 +46,7 @@ services:
     restart: always
     volumes:
       - ./spark:/app
+      - ./data:/app/data
     depends_on:
       - ingestion
       - mysql
