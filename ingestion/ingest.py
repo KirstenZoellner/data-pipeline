@@ -14,7 +14,7 @@ DB_CONFIG = {
 # Pfade
 RAW_DIR = '/app/data/raw'
 PROCESSED_DIR = '/app/data/processed'
-CORRELATION_CSV = os.path.join(PROCESSED_DIR, 'correlation_by_country_year')
+CORRELATION_CSV = os.path.join(PROCESSED_DIR, 'correlation_by_country_year.csv')
 MERGED_CSV_PATH = os.path.join(PROCESSED_DIR, 'merged_data.csv')
 
 def find_file(substring):

@@ -1,73 +1,72 @@
-version: '3.8'  # Docker Compose Version
+version: '3.8'
 
 services:
   mysql:
-    image: mysql:8.0  # Verwendetes MySQL Docker Image
+    image: mysql:8.0
     container_name: mysql
-    restart: always  # Neustart bei Fehlern
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root  # Root-Passwort (nur zu Demo-Zwecken so einfach!)
-      MYSQL_DATABASE: gdp_data   # Initial anzulegende Datenbank
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: gdp_data
     volumes:
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql  # Initiales SQL-Skript
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "3306:3306"  # Externe Portfreigabe
+      - "3306:3306"
 
   ingestion:
-    build: ./ingestion  # Baut Dockerfile im ./ingestion Ordner
-    restart: always  # Neustart bei Fehler
+    build: ./ingestion
     container_name: ingestion
+    restart: always
     volumes:
-      - ./data:/app/data  # Bindet CSV-Datenverzeichnis ins Containerverzeichnis ein
+      - ./data:/app/data
     depends_on:
-      - mysql  # Startet erst, wenn MySQL verfügbar ist
+      - mysql
 
   spark:
-    build: ./spark  # Baut Dockerfile im ./spark Ordner
-    restart: always  # Neustart bei Fehler
+    build: ./spark
     container_name: spark
+    restart: always
     volumes:
       - ./spark:/app
-      - ./data:/app/data  # Zugriff auf rohen und verarbeiteten Datensatz
-      - ./logs:/app/logs  # Log-Ausgabe des Spark-Prozesses
+      - ./data:/app/data
+      - ./logs:/app/logs
     depends_on:
-      - ingestion  # Wartet auf erfolgreiche Ingestion
-      - mysql      # Wartet auf MySQL-Dienst
+      - ingestion
+      - mysql
     command: python /app/process.py
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
     container_name: elasticsearch
-    restart: always  # Neustart bei Fehler
+    restart: always
     environment:
-      - discovery.type=single-node  # Einzelinstanz-Modus für Entwicklung
+      - discovery.type=single-node
     ports:
-      - "9200:9200"  # Elasticsearch API-Zugriff
+      - "9200:9200"
     volumes:
-      - esdata:/usr/share/elasticsearch/data  # Persistente Elasticsearch-Daten
+      - esdata:/usr/share/elasticsearch/data
 
   logstash:
     image: docker.elastic.co/logstash/logstash:7.17.9
     container_name: logstash
-    restart: always  # Neustart bei Fehler
+    restart: always
     volumes:
-      - ./elk:/usr/share/logstash/pipeline # Logstash-Konfig einbinden
-      - ./logs:/app/logs  # <-- Damit Logstash Zugriff auf spark.log hat
-      - ./data/processed/correlation_by_country_year:/usr/share/logstash/data/correlation_by_country_year
-      - ./data/processed/correlation_by_country:/usr/share/logstash/data/correlation_by_country  # ⬅️ NEU
+      - ./elk:/usr/share/logstash/pipeline
+      - ./logs:/app/logs
+      - ./data/processed:/usr/share/logstash/data/processed  # <--- Fix: richtiger Ordner
     depends_on:
       - elasticsearch
     ports:
-      - "5000:5000"  # Port für Log-Eingabe
+      - "5000:5000"
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.9
     container_name: kibana
-    restart: always  # Neustart bei Fehler
+    restart: always
     depends_on:
       - elasticsearch
     ports:
-      - "5601:5601"  # Zugriff auf die Kibana-Weboberfläche
+      - "5601:5601"
 
 volumes:
-  esdata:  # Externes Volume für Elasticsearch-Daten
+  esdata:
