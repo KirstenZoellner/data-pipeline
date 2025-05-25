@@ -19,6 +19,7 @@ services:
     restart: always
     volumes:
       - ./data:/app/data
+      - ./ingestion/.kaggle:/app/.kaggle:ro
     depends_on:
       - mysql
 

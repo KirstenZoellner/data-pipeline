@@ -2,6 +2,29 @@ import os
 import time
 import pandas as pd
 import mysql.connector
+from kaggle.api.kaggle_api_extended import KaggleApi
+
+# API initialisieren
+os.environ['KAGGLE_CONFIG_DIR'] = '/app/.kaggle'  # Im Docker-Container
+
+api = KaggleApi()
+api.authenticate()
+
+# Datensätze herunterladen
+print("📥 Lade Daten von Kaggle herunter...")
+api.dataset_download_files(
+    'fredericksalazar/global-gdp-pib-per-capita-dataset-1960-present',
+    path='/app/data/raw',
+    unzip=True
+)
+
+api.dataset_download_files(
+    'fredericksalazar/global-inflation-rate-1960-present',
+    path='/app/data/raw',
+    unzip=True
+)
+
+print("✅ Daten erfolgreich heruntergeladen.")
 
 # DB-Verbindung
 DB_CONFIG = {

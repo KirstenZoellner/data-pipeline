@@ -14,7 +14,6 @@ WORKDIR /app
 
 # Kopiere deine Skripte
 COPY process.py .
-COPY test_columns.py .
 
 # Zurück zum Standardbenutzer
 USER 1001
