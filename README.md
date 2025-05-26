@@ -39,8 +39,6 @@ data-pipeline/
 └── .gitignore
 ```
 
-
-
 # Technologien
 
 * Docker & Docker-Compose:                      Containerisierung und Orchestrierung der Microservices
@@ -81,10 +79,65 @@ data-pipeline/
 
 # Visualisierungen
 
-# Bitcoin Close Price Correlation
+## Bitcoin Close Price Correlation
 
 ![Correlation Bitcoin](images/correlation_btc_close.png)
 
-# DJIA Close Price Correlation
+## DJIA Close Price Correlation
 
 ![Correlation DJIA](images/correlation_djia_close.png)
+
+# Manuelle Ausführung beim ersten Start (Windows)
+
+Stelle sicher, dass Docker Desktop gestartet ist.
+
+Navigiere im Explorer zum Projektverzeichnis.
+
+Doppelklicke auf die Datei run_pipeline.bat.
+
+Alternativ kannst du im Terminal Folgendes ausführen:
+
+cd "Pfad\zum\Projektordner"
+run_pipeline.bat
+
+Nach erfolgreicher Ausführung findest du die Ausgabedateien unter data/processed/.
+
+## Automatisierte Ausführung mit dem Windows Task Scheduler
+
+Die Pipeline kann einmal pro Quartal automatisch ausgeführt werden. Dazu eignet sich die Windows-Aufgabenplanung.
+
+## Schritt-für-Schritt Anleitung:
+
+Taskplaner öffnen:
+
+Suche im Startmenü nach "Aufgabenplanung" oder "Task Scheduler".
+
+Neue Aufgabe erstellen:
+
+Klicke auf "Aufgabe erstellen..." (nicht "Einfache Aufgabe").
+
+Registerkarte Allgemein:
+
+Name: Data Pipeline Quarterly
+
+Haken bei "Mit höchsten Privilegien ausführen" setzen
+
+Trigger:
+
+Neu → Zeitplan: "Monatlich"
+
+Wähle z. B. Januar, April, Juli, Oktober
+
+Tag: z. B. 1., Uhrzeit: 10:00
+
+Aktionen:
+
+Neu → "Programm starten"
+
+Programm/Skript: C:\Pfad\zum\Projekt\run_pipeline.bat
+
+Bedingungen & Einstellungen:
+
+Optional: Nur bei Netzstrom oder mit Internetverbindung ausführen
+
+Speichern und schließen
