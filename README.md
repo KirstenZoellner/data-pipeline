@@ -1,114 +1,94 @@
-GDP-INFLATION-PIPELINE
+# Data-Pipeline: Korrelation zwischen Bitcoin und Börsen
 
-Ein datenintensives ETL-Projekt zur Analyse globaler BIP- und Inflationsdaten mit Daten aus Kaggle und mithilfe von Apache Spark, Docker und dem ELK-Stack.
+# Projektbeschreibung
 
-Ziel dieses Projekts ist der Aufbau einer batchbasierten Dateninfrastruktur, die in der Lage ist, große Mengen an Wirtschaftsdaten (z. B. BIP und Inflationsraten) aufzunehmen, effizient zu speichern, zu verarbeiten, zu aggregieren und für die Weiterverwendung in einer Machine-Learning-Pipeline bereitzustellen.
+Dieses Projekt analysiert die Korrelation zwischen der Kryptowährung Bitcoin und traditionellen Börsenindizes wie dem Dow Jones Industrial Average (DJIA). Die Daten stammen von der Plattform [Kaggle](https://www.kaggle.com/) und enthalten über 1 Million Datenpunkte, die täglich bzw. minütlich aktualisiert werden.
 
-Die zugrunde liegende Anwendung wird einmal pro Quartal ausgeführt und erzeugt jeweils ein aktualisiertes Machine-Learning-Modell auf Basis der neuen Daten. Diese ML-Anwendung ist nicht Teil dieses Projekts, wird jedoch durch die aufbereitete Datenbasis direkt unterstützt.
+Ziel ist es, mithilfe moderner Big-Data-Technologien aussagekräftige Analysen über mögliche Zusammenhänge zwischen traditionellen und digitalen Finanzmärkten durchzuführen.
 
-Das System verarbeitet die Daten in Batches und besteht aus modularen Microservices für:
+# Projektstruktur
 
-    automatisierte Datenbeschaffung (Kaggle)
-
-    Datenverarbeitung und -aggregation (Apache Spark)
-
-    Speicherung in einer relationalen Datenbank (MySQL)
-
-    optionaler Überwachung via ELK-Stack
-
-Die Infrastruktur ist containerisiert via Docker und kann lokal oder automatisiert (z. B. über docker-compose run scheduler) ausgeführt werden.
-
-
-Technologien:
-
-- Apache Spark (Datenverarbeitung)
-- Docker & Docker-Compose (Containerisierung)
-- MySQL (Datenbank)
-- Logstash, Elasticsearch, Kibana (Monitoring mit ELK)
-- Python (Dateninjektion, Analyse)
-
-
-Projektstruktur:
-
-```plaintext
-├── data/                  # Roh- und verarbeitete CSV-Daten
-├── ingestion/             # Injektion der CSV-Dateien in das System
-├── spark/                 # Spark-Logik und Verarbeitungsskripte
-├── mysql/                 # SQL-Initialisierungsskript
-├── elk/                   # Konfiguration für ELK-Stack (Logging)
-├── logs/                  # Log-Dateien (z. B. von Spark)
-├── docker-compose.yml     # Docker-Setup
-├── .gitignore             # Ausgeschlossene Dateien
-└── README.md              # Projektbeschreibung (du liest sie gerade)
-
-
-Ablauf der Pipeline:
-
-- CSV-Dateien werden manuell oder automatisch (z. B. vierteljährlich) im raw/-Ordner abgelegt
-- Ein Docker-Ingestion-Container liest sie ein und legt sie temporär ab
-- Spark verarbeitet und aggregiert die Daten
-- Ergebnisse werden in MySQL gespeichert
-- System-Logs und Statusdaten sind über Kibana einsehbar
+data-pipeline/
+│
+├── data/
+│   ├── raw/
+│   │   ├── bitcoin/
+│   │   │   └── btcusd_1-min_data.csv
+│   │   └── djia/
+│   │       ├── dow_jones_data.csv
+│   │       └── djia_clean.csv
+│   └── processed/
+│       └── combined_daily_and_summary.csv
+│
+├── images/
+│   ├── correlation_btc_close.png
+│   └── correlation_djia_close.png
+│
+├── ingestion/
+│   └── kaggle/
+│       ├── kaggle.json
+│       └── Dockerfile
+│
+├── spark/
+│   ├── process.py
+│   └── Dockerfile
+│
+├── mysql/
+│   └── init.sql
+│
+├── elk/
+│   └── logstash.conf
+│
+├── docker-compose.yml
+├── run_pipeline.bat
+├── README.md
+└── .gitignore
 
 
-Schnellstart: (lokal)
+# Technologien
 
-# Docker-Container starten
-docker-compose up --build
+* Docker & Docker-Compose:                      Containerisierung und Orchestrierung der Microservices
+* Apache Spark:                                 Verarbeitung, Aggregation und Analyse großer Datenmengen
+* MySQL:                                        Persistente Speicherung der bereinigten und aggregierten Daten
+* ELK Stack (Elasticsearch, Logstash, Kibana):  Visualisierung und Überwachung von Logs und Status
+* Kaggle API:                                   Download der Rohdaten
+* GitHub:                                       Versionierung und Codeverwaltung
 
-# Einzelne Container neu starten oder debuggen
-docker-compose restart spark
-docker-compose logs ingestion
+# Datenpipeline-Ablauf
 
-Kibana im Browser unter http://localhost:5601
+1. **Datenbeschaffung**:
 
+   * Die historischen Daten zu Bitcoin und DJIA werden automatisch per Kaggle-API heruntergeladen.
+2. **Ingestion Service**:
 
-Beispiel: Analyse
+   * Die CSV-Dateien werden in ein temporäres Verzeichnis geschrieben.
+3. **Verarbeitung mit Spark**:
 
-- Korrelation von BIP und Inflation
-- Regionale Unterschiede
-- Zeitliche Entwicklung
+   * Start über Docker Compose
+   * Bereinigung, Aggregation und Korrelation der Daten
+   * Speicherung in MySQL
+4. **Überwachung**:
 
+   * ELK-Stack visualisiert Logs und den Zustand des Systems in Echtzeit.
 
-Datenquelle:
+# Architekturprinzipien
 
-Die verwendeten Rohdaten stammen von Kaggle:
-o	Kaggel, Global GDP-PIB per Capita 
-	https://www.kaggle.com/datasets/fredericksalazar/global-gdp-pib-per-capita-dataset-1960-present/data
-o	Kaggle: Global Inflation rate (1960-present)
-	https://www.kaggle.com/datasets/fredericksalazar/global-inflation-rate-1960-present
+* Microservice-Architektur zur Trennung von Zuständigkeiten
+* Skalierbarkeit durch Spark & Docker
+* Sicherheit durch eingeschränkte Netzwerkbereiche und Zugang zu Services
+* Einhaltung von Datenschutz und Data-Governance-Prinzipien
 
+# Datenquellen
 
-Analyse: Korrelation zwischen Inflation und GDP-Wachstum
+* [Bitcoin Historical Data – minütlich](https://www.kaggle.com/datasets/mczielinski/bitcoin-historical-data)
+* [DJIA Historical Data – täglich](https://www.kaggle.com/datasets/joebeachcapital/djia-stocks-historical-ohlcv-daily-updated)
 
-### Deutschland: Lagged Pearson-Korrelation (1960–2023)
+# Visualisierungen
 
-Die folgende Visualisierung zeigt die zeitversetzte Korrelation (lagged Pearson correlation) zwischen Inflation und dem Wirtschaftswachstum in Deutschland.
+# Bitcoin Close Price Correlation
 
-- Ein positiver Wert bedeutet, dass steigende Inflation mit steigendem BIP-Wachstum im Folgejahr korreliert.
-- Ein negativer Wert deutet auf einen entgegengesetzten Zusammenhang hin.
+![Correlation Bitcoin](images/correlation_btc_close.png)
 
-![Lagged Pearson-Korrelation Deutschland](images/lagged_correlation_germany.png)
+# DJIA Close Price Correlation
 
-
-Autor:
-
-Kirsten Zoellner
-Studierender der IU | Wirtschaftsinformatik mit Schwerpunkt Data Engineering  
-[GitHub-Profil](https://github.com/KirstenZoellner)
-
-
-
-Neu:
-
-🧠 Automatisierter Ablauf (vierteljährlich)
-
-Die Pipeline wird vierteljährlich ausgeführt. Dabei wird Folgendes automatisch durchgeführt:
-
-    Herunterladen aktueller Krypto- und Börsendaten von Kaggle (bitcoin.csv, djia.csv)
-
-    Verarbeitung & Korrelation der Daten mit Apache Spark
-
-    Speicherung der Korrelationsergebnisse in MySQL
-
-    Visualisierung über den ELK-Stack in Kibana
+![Correlation DJIA](images/correlation_djia_close.png)
