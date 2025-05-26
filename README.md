@@ -8,6 +8,8 @@ Ziel ist es, mithilfe moderner Big-Data-Technologien aussagekräftige Analysen �
 
 Projektstruktur
 
+'''text
+
 data-pipeline/
 ├── data/
 │   ├── raw/
@@ -97,11 +99,11 @@ DJIA Historical Data – täglich
 
 Bitcoin Close Price Correlation
 
-
+![Correlation Bitcoin](images/correlation_btc_close.png)
 
 DJIA Close Price Correlation
 
-
+![Correlation DJIA](images/correlation_djia_close.png)
 
 ## Manuelle Ausführung beim ersten Start (Windows)
 
