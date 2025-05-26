@@ -6,10 +6,9 @@ Dieses Projekt analysiert die Korrelation zwischen Kryptowährungen (insbesonder
 
 Ziel ist es, mithilfe moderner Big-Data-Technologien aussagekräftige Analysen über mögliche Zusammenhänge zwischen traditionellen und digitalen Finanzmärkten durchzuführen.
 
-Projektstruktur
+## Projektstruktur
 
-'''text
-
+```text
 data-pipeline/
 ├── data/
 │   ├── raw/
