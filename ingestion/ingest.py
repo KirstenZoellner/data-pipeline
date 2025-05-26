@@ -1,15 +1,8 @@
 import os
 from kaggle.api.kaggle_api_extended import KaggleApi
-
-# ----------------------
-# KONSTANTEN & PFADSETUP
-# ----------------------
+from clean_djia_csv import clean_djia_csv
 
 RAW_DIR = '/app/data/raw'
-
-# ----------------------
-# KAGGLE-DOWNLOAD
-# ----------------------
 
 def download_from_kaggle():
     print("🌐 Starte Kaggle-Download...")
@@ -30,9 +23,14 @@ def download_from_kaggle():
         api.dataset_download_files(dataset, path=dataset_path, unzip=True)
         print(f"✅ {name} fertig.")
 
-# ----------------------
-# PIPELINE-AUFRUF
-# ----------------------
+    # 🧹 DJIA nach Download sofort bereinigen
+    print("🧹 Bereinige DJIA-Datei...")
+    clean_djia_csv(
+        input_file='data/raw/djia/dow_jones_data.csv',
+        output_file='data/raw/djia/djia_clean.csv',
+        ticker='AAPL'  # ggf. dynamisch steuerbar
+    )
+    print("✅ DJIA-Bereinigung abgeschlossen.")
 
 if __name__ == "__main__":
     download_from_kaggle()

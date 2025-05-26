@@ -29,6 +29,8 @@ services:
     build: ./spark
     container_name: spark
     restart: "no"
+    environment:
+      - SPARK_DRIVER_MEMORY=2g
     volumes:
       - ./spark:/app
       - ./data:/app/data

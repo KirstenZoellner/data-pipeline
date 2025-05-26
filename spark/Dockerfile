@@ -1,25 +1,25 @@
-# Basierend auf offiziellem Bitnami Spark-Image
 FROM bitnami/spark:3.5.0
 
-# Wechsle auf Root-Rechte für Paketinstallation
+# Root-Rechte zum Installieren
 USER root
 
-# Installiere pip + pyspark + pandas
+# System & Python Pakete
 RUN apt-get update && \
     apt-get install -y python3-pip && \
-    pip3 install pyspark pandas
+    pip3 install --no-cache-dir \
+        pandas \
+        scipy \
+        mysql-connector-python \
+        py4j
 
 # Arbeitsverzeichnis
 WORKDIR /app
 
-# Kopiere deine Skripte
+# Python-Skript reinkopieren
 COPY process.py .
 
-# Zurück zum Standardbenutzer
+# Zurück zum Standardnutzer (1001)
 USER 1001
 
-# Container soll aktiv bleiben
-CMD ["sleep", "3600"]
-
-RUN pip install scipy pandas
-
+# Starte Verarbeitung direkt
+CMD ["python3", "/app/process.py"]

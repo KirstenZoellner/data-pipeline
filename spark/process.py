@@ -1,20 +1,18 @@
-import os
-import time
-import pandas as pd
-from scipy.stats import pearsonr
-import mysql.connector
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, to_date
+from pyspark.sql.functions import col, from_unixtime, to_date
+from scipy.stats import pearsonr
+import pandas as pd
+import os
+import mysql.connector
+import time
 
-# ----------------------
-# CONFIG
-# ----------------------
+# Pfade
+BTC_PATH = "data/raw/bitcoin/btcusd_1-min_data.csv"
+DJIA_CLEAN_PATH = "data/raw/djia/djia_clean.csv"
+CORRELATION_OUTPUT = "data/processed/daily_correlations.csv"
+os.makedirs(os.path.dirname(CORRELATION_OUTPUT), exist_ok=True)
 
-BTC_PATH = "data/raw/bitcoin/bitcoin.csv"   # ggf. Dateiname anpassen
-DJIA_PATH = "data/raw/djia/djia.csv"         # ggf. Dateiname anpassen
-OUTPUT_PATH = "data/processed/btc_djia_correlation.csv"
-os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-
+# MySQL Config
 DB_CONFIG = {
     'host': 'mysql',
     'user': 'root',
@@ -22,46 +20,47 @@ DB_CONFIG = {
     'database': 'btc_djia_data'
 }
 
-# ----------------------
-# SPARK
-# ----------------------
+# Spark starten
+spark = SparkSession.builder.appName("Daily_BTC_DJIA_Correlation").getOrCreate()
 
-spark = SparkSession.builder.appName("BTC_DJIA_Correlation").getOrCreate()
+# 🟡 BTC-Daten minutengenau laden
+btc_df = (
+    spark.read.option("header", True).option("inferSchema", True).csv(BTC_PATH)
+    .withColumn("date", to_date(from_unixtime(col("Timestamp"))))
+    .select("date", "Close")
+)
 
-btc_df = spark.read.option("header", True).option("inferSchema", True).csv(BTC_PATH)
-djia_df = spark.read.option("header", True).option("inferSchema", True).csv(DJIA_PATH)
+# 🟢 DJIA-Daten laden
+djia_df = (
+    spark.read.option("header", True).option("inferSchema", True).csv(DJIA_CLEAN_PATH)
+    .withColumnRenamed("Date", "date")
+    .withColumnRenamed("Close_AAPL", "djia_close")
+    .withColumn("date", to_date("date"))
+    .select("date", "djia_close")
+)
 
-btc_df = btc_df.withColumn("date", to_date(col("Date"), "yyyy-MM-dd")).select("date", col("Close").alias("btc_close"))
-djia_df = djia_df.withColumn("date", to_date(col("Date"), "yyyy-MM-dd")).select("date", col("Close").alias("djia_close"))
-
+# 🔄 Join nach Datum (alle BTC-Minuten mit Tageswert von DJIA)
 merged_df = btc_df.join(djia_df, on="date", how="inner")
 
+# 🔁 In Pandas konvertieren
 merged_pd = merged_df.toPandas().dropna().sort_values("date")
+merged_pd["Close"] = pd.to_numeric(merged_pd["Close"], errors="coerce")
+merged_pd["djia_close"] = pd.to_numeric(merged_pd["djia_close"], errors="coerce")
+merged_pd = merged_pd.dropna()
 
-# ----------------------
-# KORRELATION BERECHNEN
-# ----------------------
+# 📊 Tägliche Pearson-Korrelation
+results = []
+for day, group in merged_pd.groupby("date"):
+    if group["Close"].nunique() > 1:
+        corr, _ = pearsonr(group["Close"], group["djia_close"])
+        results.append({"date": day, "correlation": corr, "count": len(group)})
 
-corr, _ = pearsonr(merged_pd["btc_close"], merged_pd["djia_close"])
+# 📄 Speichern als CSV
+result_df = pd.DataFrame(results)
+result_df.to_csv(CORRELATION_OUTPUT, index=False)
+print(f"✅ Tägliche Korrelationen gespeichert unter: {CORRELATION_OUTPUT}")
 
-result_df = pd.DataFrame([{
-    "correlation": corr,
-    "n_days": len(merged_pd),
-    "start_date": merged_pd["date"].min(),
-    "end_date": merged_pd["date"].max()
-}])
-
-# ----------------------
-# CSV SPEICHERN
-# ----------------------
-
-result_df.to_csv(OUTPUT_PATH, index=False)
-print(f"✅ Korrelation gespeichert: {OUTPUT_PATH}")
-
-# ----------------------
-# IN MYSQL SCHREIBEN
-# ----------------------
-
+# 🛢 In MySQL schreiben
 def write_to_mysql(df):
     for i in range(10):
         try:
@@ -75,22 +74,24 @@ def write_to_mysql(df):
         raise ConnectionError("❌ Verbindung zu MySQL fehlgeschlagen.")
 
     cursor = connection.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS daily_btc_djia_correlation (
+            date DATE PRIMARY KEY,
+            correlation FLOAT,
+            count INT
+        )
+    """)
     for _, row in df.iterrows():
         sql = """
-        INSERT INTO btc_djia_correlation (start_date, end_date, n_days, correlation)
-        VALUES (%s, %s, %s, %s)
+        REPLACE INTO daily_btc_djia_correlation (date, correlation, count)
+        VALUES (%s, %s, %s)
         """
-        values = (
-            row['start_date'],
-            row['end_date'],
-            int(row['n_days']),
-            float(row['correlation'])
-        )
+        values = (row['date'], float(row['correlation']), int(row['count']))
         cursor.execute(sql, values)
 
     connection.commit()
     cursor.close()
     connection.close()
-    print("✅ Korrelation in MySQL gespeichert.")
+    print("✅ Tägliche Korrelationen in MySQL gespeichert.")
 
 write_to_mysql(result_df)
