@@ -1,14 +1,13 @@
-# Data-Pipeline: Korrelation zwischen Bitcoin und Börsen
+## Data-Pipeline: Korrelation zwischen Bitcoin und Börsen
 
-# Projektbeschreibung
+## Projektbeschreibung
 
-Dieses Projekt analysiert die Korrelation zwischen der Kryptowährung Bitcoin und traditionellen Börsenindizes wie dem Dow Jones Industrial Average (DJIA). Die Daten stammen von der Plattform [Kaggle](https://www.kaggle.com/) und enthalten über 1 Million Datenpunkte, die täglich bzw. minütlich aktualisiert werden.
+Dieses Projekt analysiert die Korrelation zwischen Kryptowährungen (insbesondere Bitcoin) und traditionellen Börsenindizes wie dem Dow Jones Industrial Average (DJIA). Die Daten stammen von der Plattform Kaggle und enthalten über 1 Million Datenpunkte, die täglich bzw. minütlich aktualisiert werden.
 
 Ziel ist es, mithilfe moderner Big-Data-Technologien aussagekräftige Analysen über mögliche Zusammenhänge zwischen traditionellen und digitalen Finanzmärkten durchzuführen.
 
-# Projektstruktur
+Projektstruktur
 
-```text
 data-pipeline/
 ├── data/
 │   ├── raw/
@@ -24,7 +23,7 @@ data-pipeline/
 │   └── correlation_djia_close.png
 ├── ingestion/
 │   └── kaggle/
-│       ├── kaggle.json
+│       ├── kaggle.json (nicht im Git enthalten)
 │       └── Dockerfile
 ├── spark/
 │   ├── process.py
@@ -35,74 +34,102 @@ data-pipeline/
 │   └── logstash.conf
 ├── docker-compose.yml
 ├── run_pipeline.bat
+├── requirements.txt
+├── .env (nicht im Git enthalten)
 ├── README.md
 └── .gitignore
-```
 
-# Technologien
+## Technologien
 
-* Docker & Docker-Compose:                      Containerisierung und Orchestrierung der Microservices
-* Apache Spark:                                 Verarbeitung, Aggregation und Analyse großer Datenmengen
-* MySQL:                                        Persistente Speicherung der bereinigten und aggregierten Daten
-* ELK Stack (Elasticsearch, Logstash, Kibana):  Visualisierung und Überwachung von Logs und Status
-* Kaggle API:                                   Download der Rohdaten
-* GitHub:                                       Versionierung und Codeverwaltung
+Docker & Docker-Compose: Containerisierung und Orchestrierung der Microservices
 
-# Datenpipeline-Ablauf
+Apache Spark: Verarbeitung, Aggregation und Analyse großer Datenmengen
 
-1. **Datenbeschaffung**:
+MySQL: Persistente Speicherung der bereinigten und aggregierten Daten
 
-   * Die historischen Daten zu Bitcoin und DJIA werden automatisch per Kaggle-API heruntergeladen.
-2. **Ingestion Service**:
+ELK Stack (Elasticsearch, Logstash, Kibana): Visualisierung und Überwachung von Logs und Status
 
-   * Die CSV-Dateien werden in ein temporäres Verzeichnis geschrieben.
-3. **Verarbeitung mit Spark**:
+Kaggle API: Download der Rohdaten
 
-   * Start über Docker Compose
-   * Bereinigung, Aggregation und Korrelation der Daten
-   * Speicherung in MySQL
-4. **Überwachung**:
+GitHub: Versionierung und Codeverwaltung
 
-   * ELK-Stack visualisiert Logs und den Zustand des Systems in Echtzeit.
+Python dotenv: Verwaltung von Umgebungsvariablen (.env-Dateien)
 
-# Architekturprinzipien
+## Datenpipeline-Ablauf
 
-* Microservice-Architektur zur Trennung von Zuständigkeiten
-* Skalierbarkeit durch Spark & Docker
-* Sicherheit durch eingeschränkte Netzwerkbereiche und Zugang zu Services
-* Einhaltung von Datenschutz und Data-Governance-Prinzipien
+Datenbeschaffung:
 
-# Datenquellen
+Die historischen Daten zu Bitcoin und DJIA werden automatisch per Kaggle-API heruntergeladen.
 
-* [Bitcoin Historical Data – minütlich](https://www.kaggle.com/datasets/mczielinski/bitcoin-historical-data)
-* [DJIA Historical Data – täglich](https://www.kaggle.com/datasets/joebeachcapital/djia-stocks-historical-ohlcv-daily-updated)
+Ingestion Service:
 
-# Visualisierungen
+Die CSV-Dateien werden in ein temporäres Verzeichnis geschrieben.
 
-## Bitcoin Close Price Correlation
+Verarbeitung mit Spark:
 
-![Correlation Bitcoin](images/correlation_btc_close.png)
+Start über Docker Compose
 
-## DJIA Close Price Correlation
+Bereinigung, Aggregation und Korrelation der Daten
 
-![Correlation DJIA](images/correlation_djia_close.png)
+Speicherung in MySQL
 
-# Manuelle Ausführung beim ersten Start (Windows)
+Überwachung:
+
+ELK-Stack visualisiert Logs und den Zustand des Systems in Echtzeit.
+
+## Architekturprinzipien
+
+Microservice-Architektur zur Trennung von Zuständigkeiten
+
+Skalierbarkeit durch Spark & Docker
+
+Sicherheit durch eingeschränkte Netzwerkbereiche und Zugang zu Services
+
+Einhaltung von Datenschutz und Data-Governance-Prinzipien
+
+## Datenquellen
+
+Bitcoin Historical Data – minütlich
+
+DJIA Historical Data – täglich
+
+## Visualisierungen
+
+Bitcoin Close Price Correlation
+
+
+
+DJIA Close Price Correlation
+
+
+
+## Manuelle Ausführung beim ersten Start (Windows)
 
 Stelle sicher, dass Docker Desktop gestartet ist.
 
 Navigiere im Explorer zum Projektverzeichnis.
 
-Doppelklicke auf die Datei run_pipeline.bat.
+Führe die Datei run_pipeline.bat per Doppelklick aus.
 
-Alternativ kannst du im Terminal Folgendes ausführen:
+Alternativ im Terminal:
 
 cd "Pfad\zum\Projektordner"
 run_pipeline.bat
 
-Installiere benötigte Python-Bibliotheken
+Installiere benötigte Python-Bibliotheken:
 
 pip install -r requirements.txt
+
+Erstelle eine .env Datei mit folgenden Einträgen (Beispiel):
+
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=geheim
+DB_NAME=finance
+
+Lade deine kaggle.json von deinem Kaggle-Konto herunter und speichere sie unter:
+
+ingestion/kaggle/kaggle.json
 
 Nach erfolgreicher Ausführung findest du die Ausgabedateien unter data/processed/.
 

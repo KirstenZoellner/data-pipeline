@@ -3,6 +3,9 @@ from pyspark.sql.functions import col, from_unixtime, to_date, avg, when
 from scipy.stats import pearsonr
 import pandas as pd
 import os
+from dotenv import load_dotenv
+load_dotenv()  # Lädt Variablen aus .env-Datei
+
 import mysql.connector
 import time
 
@@ -14,11 +17,12 @@ os.makedirs(os.path.dirname(COMBINED_OUTPUT), exist_ok=True)
 
 # DB
 DB_CONFIG = {
-    'host': 'mysql',
-    'user': 'root',
-    'password': 'root',
-    'database': 'btc_djia_data'
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', ''),
+    'database': os.getenv('DB_NAME', 'btc_djia_data')
 }
+
 
 # Spark Session
 spark = SparkSession.builder.appName("Rolling_Correlation").getOrCreate()
