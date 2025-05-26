@@ -100,6 +100,10 @@ Alternativ kannst du im Terminal Folgendes ausführen:
 cd "Pfad\zum\Projektordner"
 run_pipeline.bat
 
+Installiere benötigte Python-Bibliotheken
+
+pip install -r requirements.txt
+
 Nach erfolgreicher Ausführung findest du die Ausgabedateien unter data/processed/.
 
 ## Automatisierte Ausführung mit dem Windows Task Scheduler
