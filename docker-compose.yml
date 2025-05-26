@@ -2,29 +2,13 @@ version: '3.8'
 
 services:
 
-  scheduler:
-    build: ./ingestion
-    container_name: scheduler
-    depends_on:
-      - mysql
-      - spark
-    volumes:
-      - ./data:/app/data
-      - ./ingestion/.kaggle:/root/.config/kaggle:ro
-    command: >
-      sh -c "
-        python ingest.py &&
-        docker-compose run --rm spark &&
-        python ingest.py
-      "
-
   mysql:
     image: mysql:8.0
     container_name: mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: gdp_data
+      MYSQL_DATABASE: btc_djia_data
     volumes:
       - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
@@ -33,17 +17,18 @@ services:
   ingestion:
     build: ./ingestion
     container_name: ingestion
-    restart: always
+    restart: "no"
     volumes:
       - ./data:/app/data
       - ./ingestion/.kaggle:/root/.config/kaggle:ro
     depends_on:
       - mysql
+    command: python ingest.py
 
   spark:
     build: ./spark
     container_name: spark
-    restart: always
+    restart: "no"
     volumes:
       - ./spark:/app
       - ./data:/app/data
@@ -70,7 +55,7 @@ services:
     volumes:
       - ./elk:/usr/share/logstash/pipeline
       - ./logs:/app/logs
-      - ./data/processed:/usr/share/logstash/data/processed  # <--- Fix: richtiger Ordner
+      - ./data/processed:/usr/share/logstash/data/processed
     depends_on:
       - elasticsearch
     ports:

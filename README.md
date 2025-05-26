@@ -97,3 +97,18 @@ Kirsten Zoellner
 Studierender der IU | Wirtschaftsinformatik mit Schwerpunkt Data Engineering  
 [GitHub-Profil](https://github.com/KirstenZoellner)
 
+
+
+Neu:
+
+🧠 Automatisierter Ablauf (vierteljährlich)
+
+Die Pipeline wird vierteljährlich ausgeführt. Dabei wird Folgendes automatisch durchgeführt:
+
+    Herunterladen aktueller Krypto- und Börsendaten von Kaggle (bitcoin.csv, djia.csv)
+
+    Verarbeitung & Korrelation der Daten mit Apache Spark
+
+    Speicherung der Korrelationsergebnisse in MySQL
+
+    Visualisierung über den ELK-Stack in Kibana
