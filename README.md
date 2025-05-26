@@ -8,8 +8,8 @@ Ziel ist es, mithilfe moderner Big-Data-Technologien aussagekräftige Analysen �
 
 # Projektstruktur
 
+d```text
 data-pipeline/
-│
 ├── data/
 │   ├── raw/
 │   │   ├── bitcoin/
@@ -19,30 +19,26 @@ data-pipeline/
 │   │       └── djia_clean.csv
 │   └── processed/
 │       └── combined_daily_and_summary.csv
-│
 ├── images/
 │   ├── correlation_btc_close.png
 │   └── correlation_djia_close.png
-│
 ├── ingestion/
 │   └── kaggle/
 │       ├── kaggle.json
 │       └── Dockerfile
-│
 ├── spark/
 │   ├── process.py
 │   └── Dockerfile
-│
 ├── mysql/
 │   └── init.sql
-│
 ├── elk/
 │   └── logstash.conf
-│
 ├── docker-compose.yml
 ├── run_pipeline.bat
 ├── README.md
 └── .gitignore
+```
+
 
 
 # Technologien
