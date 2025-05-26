@@ -94,11 +94,11 @@ data-pipeline/
 
 ### Bitcoin Close Price Correlation
 
-![Correlation Bitcoin](..images/correlation_btc_close.png)
+![Correlation Bitcoin](images/correlation_btc_close.png)
 
 ### DJIA Close Price Correlation
 
-![Correlation DJIA](..images/correlation_djia_close.png)
+![Correlation DJIA](images/correlation_djia_close.png)
 
 Correlation DJIA
 🖥️ Manuelle Ausführung beim ersten Start (Windows)
