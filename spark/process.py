@@ -1,69 +1,96 @@
-
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
-from scipy.stats import pearsonr
-import pandas as pd
 import os
+import time
+import pandas as pd
+from scipy.stats import pearsonr
+import mysql.connector
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, to_date
 
-# Spark Session starten
-spark = SparkSession.builder.appName("CorrelationByCountryYear").getOrCreate()
+# ----------------------
+# CONFIG
+# ----------------------
 
-# Dateipfade
-inflation_path = "data/raw/global_inflation_countries.csv"
-gdp_path = "data/raw/pib_per_capita_countries_dataset.csv"
-os.makedirs("data/processed", exist_ok=True)
-output_path = "data/processed/correlation_by_country_year.csv"
-os.makedirs(os.path.dirname(output_path), exist_ok=True)
+BTC_PATH = "data/raw/bitcoin/bitcoin.csv"   # ggf. Dateiname anpassen
+DJIA_PATH = "data/raw/djia/djia.csv"         # ggf. Dateiname anpassen
+OUTPUT_PATH = "data/processed/btc_djia_correlation.csv"
+os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
 
-# CSVs laden
-inflation_df = spark.read.option("header", True).option("inferSchema", True).csv(inflation_path)
-gdp_df = spark.read.option("header", True).option("inferSchema", True).csv(gdp_path)
+DB_CONFIG = {
+    'host': 'mysql',
+    'user': 'root',
+    'password': 'root',
+    'database': 'btc_djia_data'
+}
 
-# Nur relevante Spalten auswählen
-inflation_df = inflation_df.select("country_code", "country_name", "year", "inflation_rate")
-gdp_df = gdp_df.select("country_code", "year", "gdp_per_capita")
+# ----------------------
+# SPARK
+# ----------------------
 
-# Nullwerte filtern
-inflation_df = inflation_df.filter(col("inflation_rate").isNotNull())
-gdp_df = gdp_df.filter(col("gdp_per_capita").isNotNull())
+spark = SparkSession.builder.appName("BTC_DJIA_Correlation").getOrCreate()
 
-# Zusammenführen
-merged_df = inflation_df.join(gdp_df, on=["country_code", "year"], how="inner")
+btc_df = spark.read.option("header", True).option("inferSchema", True).csv(BTC_PATH)
+djia_df = spark.read.option("header", True).option("inferSchema", True).csv(DJIA_PATH)
 
-# In Pandas umwandeln für komplexe Korrelationen
-merged_pd = merged_df.toPandas()
+btc_df = btc_df.withColumn("date", to_date(col("Date"), "yyyy-MM-dd")).select("date", col("Close").alias("btc_close"))
+djia_df = djia_df.withColumn("date", to_date(col("Date"), "yyyy-MM-dd")).select("date", col("Close").alias("djia_close"))
 
-# Berechnung wie im Original
-results = []
+merged_df = btc_df.join(djia_df, on="date", how="inner")
 
-for country in merged_pd["country_name"].unique():
-    df = merged_pd[merged_pd["country_name"] == country].dropna().sort_values("year")
-    years = df["year"].unique()
+merged_pd = merged_df.toPandas().dropna().sort_values("date")
 
-    for year in years:
-        sub = df[df["year"] <= year].copy()
+# ----------------------
+# KORRELATION BERECHNEN
+# ----------------------
 
-        # einfache Pearson Korrelation
+corr, _ = pearsonr(merged_pd["btc_close"], merged_pd["djia_close"])
+
+result_df = pd.DataFrame([{
+    "correlation": corr,
+    "n_days": len(merged_pd),
+    "start_date": merged_pd["date"].min(),
+    "end_date": merged_pd["date"].max()
+}])
+
+# ----------------------
+# CSV SPEICHERN
+# ----------------------
+
+result_df.to_csv(OUTPUT_PATH, index=False)
+print(f"✅ Korrelation gespeichert: {OUTPUT_PATH}")
+
+# ----------------------
+# IN MYSQL SCHREIBEN
+# ----------------------
+
+def write_to_mysql(df):
+    for i in range(10):
         try:
-            pearson_corr, _ = pearsonr(sub["inflation_rate"], sub["gdp_per_capita"])
-        except:
-            pearson_corr = pd.NA
+            connection = mysql.connector.connect(**DB_CONFIG)
+            print("✅ Verbindung zu MySQL hergestellt")
+            break
+        except mysql.connector.Error:
+            print(f"⏳ Warte auf MySQL... Versuch {i+1}/10")
+            time.sleep(5)
+    else:
+        raise ConnectionError("❌ Verbindung zu MySQL fehlgeschlagen.")
 
-        # Lagged Pearson: Inflation(t) vs. GDP(t+1)
-        sub["gdp_lagged"] = sub["gdp_per_capita"].shift(-1)
-        sub_lagged = sub.dropna()
-        try:
-            lag_corr, _ = pearsonr(sub_lagged["inflation_rate"], sub_lagged["gdp_lagged"])
-        except:
-            lag_corr = pd.NA
+    cursor = connection.cursor()
+    for _, row in df.iterrows():
+        sql = """
+        INSERT INTO btc_djia_correlation (start_date, end_date, n_days, correlation)
+        VALUES (%s, %s, %s, %s)
+        """
+        values = (
+            row['start_date'],
+            row['end_date'],
+            int(row['n_days']),
+            float(row['correlation'])
+        )
+        cursor.execute(sql, values)
 
-        results.append({
-            "country_name": country,
-            "year": int(year),
-            "pearson_correlation": pearson_corr,
-            "lagged_pearson_correlation": lag_corr
-        })
+    connection.commit()
+    cursor.close()
+    connection.close()
+    print("✅ Korrelation in MySQL gespeichert.")
 
-# Ergebnisse speichern
-pd.DataFrame(results).to_csv(output_path, index=False)
-print(f"✅ Ergebnis gespeichert: {output_path}")
+write_to_mysql(result_df)

@@ -1,18 +1,11 @@
-DROP TABLE IF EXISTS correlation_by_country_year;
+DROP DATABASE IF EXISTS btc_djia_data;
+CREATE DATABASE btc_djia_data;
+USE btc_djia_data;
 
-CREATE TABLE correlation_by_country_year (
+CREATE TABLE btc_djia_correlation (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    country VARCHAR(255),
-    year INT,
-    pearson_correlation FLOAT,
-    lagged_pearson_correlation FLOAT
-);
-DROP TABLE IF EXISTS gdp_inflation;
-
-CREATE TABLE gdp_inflation (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    country VARCHAR(255),
-    year INT,
-    gdp_per_capita FLOAT,
-    inflation FLOAT
+    start_date DATE,
+    end_date DATE,
+    n_days INT,
+    correlation FLOAT
 );
