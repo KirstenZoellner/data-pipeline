@@ -90,11 +90,15 @@ data-pipeline/
 
     DJIA Historical Data – täglich
 
-📊 Visualisierungen
-Bitcoin Close Price Correlation
+## Visualisierungen
 
-Correlation Bitcoin
-DJIA Close Price Correlation
+### Bitcoin Close Price Correlation
+
+![Correlation Bitcoin](images/correlation_btc_close.png)
+
+### DJIA Close Price Correlation
+
+![Correlation DJIA](images/correlation_djia_close.png)
 
 Correlation DJIA
 🖥️ Manuelle Ausführung beim ersten Start (Windows)
