@@ -1,0 +1,5 @@
+kaggle
+pyspark
+scipy
+pandas
+mysql-connector-python
