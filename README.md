@@ -8,7 +8,7 @@ Ziel ist es, mithilfe moderner Big-Data-Technologien aussagekräftige Analysen �
 
 # Projektstruktur
 
-d```text
+```text
 data-pipeline/
 ├── data/
 │   ├── raw/
